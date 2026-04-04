@@ -19,7 +19,7 @@ document.getElementById('actualizarAnio').onclick=()=>{data.anio=parseInt(yearEl
 document.getElementById('exportJson').onclick=()=>{data.titulo=titleEl.value.trim()||`Vacaciones ${data.anio}`;const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`vacaciones_${data.anio}.json`;a.click();URL.revokeObjectURL(a.href)};
 document.getElementById('importJsonBtn').onclick=()=>document.getElementById('importJson').click();
 document.getElementById('importJson').onchange=(e)=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const obj=JSON.parse(r.result);data={titulo:obj.titulo||`Vacaciones ${obj.anio||new Date().getFullYear()}`,anio:obj.anio||new Date().getFullYear(),vacaciones:obj.vacaciones||[],festivos:obj.festivos||[]};render()}catch(err){alert('JSON no válido')}};r.readAsText(file)};
-document.getElementById('printBtn').onclick=()=>{data.titulo=titleEl.value.trim()||`Vacaciones ${data.anio}`;document.title=data.titulo;const prev=viewMode;viewMode='year';document.querySelectorAll('.viewmode').forEach(b=>b.classList.remove('active'));document.querySelector('.viewmode[data-view="year"]').classList.add('active');render();setTimeout(()=>{window.print();viewMode=prev;document.querySelectorAll('.viewmode').forEach(b=>b.classList.remove('active'));document.querySelector(`.viewmode[data-view="${prev}"]`).classList.add('active');render();},200)};
+
 applyFestivosBase();render();
 
 document.querySelectorAll('.viewmode').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.viewmode').forEach(b=>b.classList.remove('active'));btn.classList.add('active');viewMode=btn.dataset.view;render();});
@@ -44,19 +44,32 @@ function buildYearHTML(){
   return out;
 }
 
-document.getElementById('shareBtn').onclick = async () => {
-  data.titulo=titleEl.value.trim()||`Vacaciones ${data.anio}`;
-  const html = buildYearHTML();
-  const blob = new Blob([html], { type: 'text/html' });
-  const file = new File([blob], `${data.titulo.replace(/[^a-z0-9]+/gi,'_')}.html`, { type: 'text/html' });
-  if (navigator.canShare && navigator.canShare({ files:[file] })) {
-    try {
-      await navigator.share({ title: data.titulo, text: `Calendario ${data.anio}`, files:[file] });
-      return;
-    } catch(e) {}
+
+function buildYearSheet(){
+  const vacSet=new Set(data.vacaciones), fesSet=new Set(data.festivos);
+  let out=`<div class="year-sheet"><h1>${data.titulo}</h1><div class="subhead">Año ${data.anio} · Vacaciones: ${data.vacaciones.length} · Festivos: ${data.festivos.length}</div><div class="year-legend"><span><i class="v"></i>Vacaciones</span><span><i class="f"></i>Festivos</span></div><section class="year-grid">`;
+  for(let month=1;month<=12;month++){
+    out += `<section class="year-month"><div class="year-month-title">${new Date(data.anio,month-1,1).toLocaleDateString('es-ES',{month:'long'})}</div><div class="year-month-body"><div class="year-weekdays">${['Lu','Ma','Mi','Ju','Vi','Sa','Do'].map(d=>`<div>${d}</div>`).join('')}</div>`;
+    const first=new Date(data.anio,month-1,1); let start=(first.getDay()+6)%7; const daysInMonth=new Date(data.anio,month,0).getDate(); let day=1;
+    for(let w=0;w<6;w++){
+      out += '<div class="year-week">';
+      for(let i=0;i<7;i++){
+        if((w===0&&i<start)||day>daysInMonth){ out += '<div class="year-day empty"></div>'; }
+        else { const k=key(data.anio,month,day); const cls = vacSet.has(k) ? 'year-day vacaciones' : fesSet.has(k) ? 'year-day festivo' : 'year-day'; out += `<div class="${cls}">${day}</div>`; day++; }
+      }
+      out += '</div>'; if(day>daysInMonth) break;
+    }
+    out += '</div></section>';
   }
-  const w = window.open('', '_blank');
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+  out += '</section></div>';
+  return out;
+}
+
+document.getElementById('printBtn').onclick=()=>{
+  data.titulo=titleEl.value.trim()||`Vacaciones ${data.anio}`;
+  document.title=data.titulo;
+  let root=document.getElementById('yearPrintRoot');
+  if(!root){ root=document.createElement('div'); root.id='yearPrintRoot'; root.className='year-print-root'; document.body.appendChild(root); }
+  root.innerHTML=buildYearSheet();
+  setTimeout(()=>window.print(),120);
 };

@@ -23,3 +23,40 @@ document.getElementById('printBtn').onclick=()=>{data.titulo=titleEl.value.trim(
 applyFestivosBase();render();
 
 document.querySelectorAll('.viewmode').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.viewmode').forEach(b=>b.classList.remove('active'));btn.classList.add('active');viewMode=btn.dataset.view;render();});
+
+function buildYearHTML(){
+  const vacSet=new Set(data.vacaciones), fesSet=new Set(data.festivos);
+  let out=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${data.titulo}</title><link rel="stylesheet" href="style.css"></head><body><main class="share-sheet"><h1>${data.titulo}</h1><p>Año ${data.anio}</p><section class="year-grid">`;
+  for(let month=1;month<=12;month++){
+    out += `<section class="mini-month"><div class="mini-title">${new Date(data.anio,month-1,1).toLocaleDateString('es-ES',{month:'long'})}</div><div class="mini-body"><div class="mini-weekdays">${['Lu','Ma','Mi','Ju','Vi','Sa','Do'].map(d=>`<div>${d}</div>`).join('')}</div>`;
+    const first=new Date(data.anio,month-1,1); let start=(first.getDay()+6)%7; const daysInMonth=new Date(data.anio,month,0).getDate(); let day=1;
+    for(let w=0;w<6;w++){
+      out += '<div class="mini-week">';
+      for(let i=0;i<7;i++){
+        if((w===0&&i<start)||day>daysInMonth){ out += '<div class="mini-day empty"></div>'; }
+        else { const k=key(data.anio,month,day); const cls = vacSet.has(k) ? 'mini-day vacaciones' : fesSet.has(k) ? 'mini-day festivo' : 'mini-day'; out += `<div class="${cls}">${day}</div>`; day++; }
+      }
+      out += '</div>'; if(day>daysInMonth) break;
+    }
+    out += '</div></section>';
+  }
+  out += '</section></main></body></html>';
+  return out;
+}
+
+document.getElementById('shareBtn').onclick = async () => {
+  data.titulo=titleEl.value.trim()||`Vacaciones ${data.anio}`;
+  const html = buildYearHTML();
+  const blob = new Blob([html], { type: 'text/html' });
+  const file = new File([blob], `${data.titulo.replace(/[^a-z0-9]+/gi,'_')}.html`, { type: 'text/html' });
+  if (navigator.canShare && navigator.canShare({ files:[file] })) {
+    try {
+      await navigator.share({ title: data.titulo, text: `Calendario ${data.anio}`, files:[file] });
+      return;
+    } catch(e) {}
+  }
+  const w = window.open('', '_blank');
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+};

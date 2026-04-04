@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Planificador de Vacaciones</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <h1>Planificador de Vacaciones</h1>
+      <p>Versión móvil para marcar vacaciones y festivos, cambiar el año y exportar tu calendario.</p>
+    </header>
+    <section class="panel controls">
+      <label><span>Título</span><input id="titulo" type="text" value="Vacaciones 2026" /></label>
+      <div class="row">
+        <label><span>Año</span><input id="anio" type="number" value="2026" min="2020" max="2035" /></label>
+        <button id="actualizarAnio">Actualizar año</button>
+      </div>
+      <div class="modes">
+        <button class="mode active" data-mode="vacaciones">Vacaciones</button>
+        <button class="mode" data-mode="festivo">Festivos</button>
+      </div>
+      <div class="stats">
+        <div><strong id="vacCount">0</strong><span>Vacaciones</span></div>
+        <div><strong id="fesCount">0</strong><span>Festivos</span></div>
+      </div>
+      <div class="actions">
+        <button id="exportJson">Exportar JSON</button>
+        <button id="importJsonBtn">Importar JSON</button>
+        <button id="printBtn">Imprimir / PDF</button>
+        <input id="importJson" type="file" accept="application/json" hidden />
+      </div>
+    </section>
+    <section id="months" class="months"></section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
